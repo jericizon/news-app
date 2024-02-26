@@ -11,7 +11,16 @@ class NewsAppController extends Controller
     public static function search(Request $request)
     {
         try {
-            return \GuardianApi::search($request->search, $request->input('page', 1));
+
+            $minutes = 30; // For example, 30 minutes
+            // Convert minutes to seconds
+            $seconds = $minutes * 60;
+            $slugLimited = substr(\Str::slug(json_encode($request->all())), 0, 20);
+
+            // cache results for 30 mins for better perfomance
+            return \Cache::remember($slugLimited, $seconds, function () use ($request) {
+                return \GuardianApi::search($request->search, $request->input('page', 1));
+            });
         } catch (\Exception $error) {
             \Log::error($error);
             return response()->json([
